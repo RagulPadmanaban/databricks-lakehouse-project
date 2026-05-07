@@ -1,0 +1,6 @@
+order_id,amount,status
+101,250,Completed
+102,450,Pending
+103,300,Completed
+104,150,Cancelled
+105,500,Completed
