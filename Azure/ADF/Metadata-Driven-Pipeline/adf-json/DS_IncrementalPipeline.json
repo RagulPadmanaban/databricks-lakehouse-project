@@ -1,0 +1,115 @@
+{
+    "name": "DS_IncrementalPipeline",
+    "properties": {
+        "activities": [
+            {
+                "name": "DS_GetMetadata_Details",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "JsonSource",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageReadSettings",
+                            "recursive": true,
+                            "enablePartitionDiscovery": false
+                        },
+                        "formatSettings": {
+                            "type": "JsonReadSettings"
+                        }
+                    },
+                    "dataset": {
+                        "referenceName": "ds_metadata",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "filename": "metadata.json"
+                        }
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "ForEach1",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "DS_GetMetadata_Details",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('DS_GetMetadata_Details').output.value",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "DS_Transformation",
+                            "type": "ExecuteDataFlow",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataflow": {
+                                    "referenceName": "DS_DynamicFlow",
+                                    "type": "DataFlowReference",
+                                    "parameters": {
+                                        "filename": {
+                                            "value": "'@{item().source_file}'",
+                                            "type": "Expression"
+                                        },
+                                        "foldername": {
+                                            "value": "'@{item().sink_path}'",
+                                            "type": "Expression"
+                                        }
+                                    },
+                                    "datasetParameters": {
+                                        "DSSource": {
+                                            "filename": {
+                                                "value": "@item().source_file",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        "sink1": {
+                                            "foldername": {
+                                                "value": "@item().sink_path",
+                                                "type": "Expression"
+                                            },
+                                            "filename": {
+                                                "value": "@item().source_file",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                },
+                                "compute": {
+                                    "coreCount": 8,
+                                    "computeType": "General"
+                                },
+                                "traceLevel": "Fine"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "annotations": []
+    }
+}
